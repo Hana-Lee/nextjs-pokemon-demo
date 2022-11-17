@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import Head from 'next/head'
 import styles from '../../styles/Details.module.css'
 import Image from 'next/image'
+import { GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult } from 'next'
+import { ParsedUrlQuery } from 'querystring'
+import { PreviewData } from 'next/types'
 
 interface PokemonStat {
   name: string
@@ -17,36 +20,40 @@ interface PokemonDetail {
   image: string
 }
 
-export default function Details() {
-  const { query: { id } } = useRouter()
+interface PokemonDetailProps {
+  pokemonDetail: PokemonDetail
+}
 
-  const [pokemon, setPokemon] = useState<PokemonDetail>()
+interface Query extends ParsedUrlQuery {
+  id: string
+}
 
-  useEffect(() => {
-    async function getPokemon() {
-      const resp = await fetch(`https://jherr-pokemon.s3.us-west-1.amazonaws.com/pokemon/${id}.json`)
-      setPokemon(await resp.json())
+export const getServerSideProps: GetServerSideProps<PokemonDetailProps, Query> = async (context: GetServerSidePropsContext<Query>): Promise<GetServerSidePropsResult<PokemonDetailProps>> => {
+  const { params } = context
+  const resp = await fetch(`https://jherr-pokemon.s3.us-west-1.amazonaws.com/pokemon/${params?.id}.json`)
+  return {
+    props: {
+      pokemonDetail: await resp.json()
     }
-    if (id) getPokemon().catch(console.error)
-  }, [id])
+  }
+}
 
-  if (!pokemon) return null
-
+export default function Details({ pokemonDetail }: PokemonDetailProps) {
   return (
     <div>
       <Head>
-        <title>{pokemon.name}</title>
+        <title>{pokemonDetail.name}</title>
       </Head>
       <div>
         <Link href="/">Back to Home</Link>
       </div>
       <div className={styles.layout}>
         <div>
-          <img className={styles.picture} src={`https://jherr-pokemon.s3.us-west-1.amazonaws.com/${pokemon.image}`} alt={pokemon.name}/>
+          <img className={styles.picture} src={`https://jherr-pokemon.s3.us-west-1.amazonaws.com/${pokemonDetail.image}`} alt={pokemonDetail.name}/>
         </div>
         <div>
-          <div className={styles.name}>{pokemon.name}</div>
-          <div className={styles.type}>{pokemon.type.join(', ')}</div>
+          <div className={styles.name}>{pokemonDetail.name}</div>
+          <div className={styles.type}>{pokemonDetail.type.join(', ')}</div>
           <table>
             <thead className={styles.header}>
             <tr>
@@ -54,7 +61,7 @@ export default function Details() {
               <th>Value</th>
             </tr>
             </thead>
-            {pokemon.stats.map(({ name, value }) => (
+            {pokemonDetail.stats.map(({ name, value }) => (
               <tr key={name}>
                 <td className={styles.attribute}>{name}</td>
                 <td>{value}</td>

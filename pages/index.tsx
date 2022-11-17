@@ -1,9 +1,7 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { stringify } from 'querystring'
-import { PropsWithoutRef, useEffect, useState } from 'react'
 import styles from '../styles/Home.module.css'
 import Link from 'next/link'
+import { GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult } from 'next'
 
 export interface Pokemon {
   id: number
@@ -11,17 +9,20 @@ export interface Pokemon {
   image: string
 }
 
-export default function Home() {
-  const [pokemonList, setPokemonList] = useState<Pokemon[]>([])
+interface PokemonListProps {
+  pokemonList: Pokemon[]
+}
 
-  useEffect(() => {
-    async function getPokemonList() {
-      const resp = await fetch('https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json')
-      setPokemonList(await resp.json())
-    }
-    getPokemonList().catch(console.error)
-  }, [])
+export const getServerSideProps: GetServerSideProps<PokemonListProps> = async (context: GetServerSidePropsContext): Promise<GetServerSidePropsResult<PokemonListProps>> => {
+  const resp = await fetch('https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json')
+  return {
+    props: {
+      pokemonList: await resp.json(),
+    },
+  }
+}
 
+export default function Home({ pokemonList }: PokemonListProps) {
   return (
     <div className={styles.container}>
       <Head>
